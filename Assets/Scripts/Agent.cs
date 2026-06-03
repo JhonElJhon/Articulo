@@ -27,7 +27,6 @@ public class Agent : MonoBehaviour
     public OCEAN_Model.Frames personalityType;
     public OCEAN_Model personality;
 
-    // Cached as doubles to match OCEAN_Model; exposed to Inspector
     public double openness, conscientiousness, extraversion, agreeableness, neuroticism, stability;
 
     // ── Emotional State ───────────────────────────────────────────────────────
@@ -69,14 +68,12 @@ public class Agent : MonoBehaviour
     private float _actionDuration = 3f;
 
     private float _reEvalTimer              = 0f;
-    private const float RE_EVAL_INTERVAL    = 1.2f;  // seconds between BDI re-evaluations
+    private const float RE_EVAL_INTERVAL    = 1.2f;
 
     private float _fightBroadcastCooldown   = 0f;
     private const float FIGHT_BCAST_INTERVAL = 2.0f;
 
     // ── Field reference ───────────────────────────────────────────────────────
-    // Tag a GameObject "FieldCenter" in your scene for BOO/CHANT face-direction
-    // and PitchInvasion destination.
     private Transform _fieldCenter;
 
     // ── Animator ───────────────────────────────────────────────────────
@@ -118,7 +115,6 @@ public class Agent : MonoBehaviour
         npcName = "NPC_" + npcID;
         gameObject.name = npcName;
 
-        // Cache field center
         GameObject fc = GameObject.FindWithTag("FieldCenter");
         if (fc != null) _fieldCenter = fc.transform;
         FaceTarget(_fieldCenter);
@@ -126,7 +122,6 @@ public class Agent : MonoBehaviour
         if (navAgent != null)
             _baseNavSpeed = navAgent.speed;
 
-        // Add random stagger to BDI timer to prevent spikes
         _reEvalTimer = Random.Range(0f, RE_EVAL_INTERVAL);
 
         animator = GetComponent<Animator>();   
@@ -136,31 +131,19 @@ public class Agent : MonoBehaviour
     {
         if (mood == null) return;
 
-        // Drive the current action first
         ExecuteCurrentAction();
-        /*
-        // Terminal states logic: stop updating BDI and Mood once locked in
-        if (currentActionType == AgentActionType.Run || 
-            currentActionType == AgentActionType.Fight || 
-            currentActionType == AgentActionType.PitchInvasion)
-        {
-            return;
-        }*/
 
-        // Decay mood every frame
         mood.Decay((float)stability, Time.deltaTime);
         currentMoodOctant = mood.GetOctantName();
 
-        // Cooldown timers
         _fightBroadcastCooldown -= Time.deltaTime;
 
-        // Periodic perception + BDI re-evaluation (internal mood drift)
         _reEvalTimer += Time.deltaTime;
         if (_reEvalTimer >= RE_EVAL_INTERVAL)
         {
             _reEvalTimer = 0f;
             UpdatePerception();
-            ReEvaluateIntention(false); // Evaluate and change state, but DO NOT submit event to GM yet
+            ReEvaluateIntention(false);
         }
     }
 
@@ -171,7 +154,6 @@ public class Agent : MonoBehaviour
     public void ReceiveGlobalEvent(SimEvent evt)
     {
         ProcessEvent(evt);
-        // Do not call ReEvaluateIntention here. This is the listening phase.
     }
 
     public void ReceiveLocalEvent(SimEvent evt)  => ProcessEvent(evt);
@@ -179,23 +161,13 @@ public class Agent : MonoBehaviour
     public void ExecuteLocalAction() 
     {
         UpdatePerception();
-        ReEvaluateIntention(true); // Forces submission for the new iteration
+        ReEvaluateIntention(true);
     }
 
     private void ProcessEvent(SimEvent evt)
     {
-        // Don't react to events you yourself caused
         if (evt.instigator == this) return;
 
-        /*
-        // Terminal states logic: stop reacting to events once locked in
-        if (currentActionType == AgentActionType.Run || 
-            currentActionType == AgentActionType.Fight || 
-            currentActionType == AgentActionType.PitchInvasion)
-        {
-            return;
-        }
-        */
         EmotionInstance felt = AppraisalEngine.Appraise(evt, this);
         if (felt.emotion == OCCEmotion.None) return;
 
@@ -220,14 +192,11 @@ public class Agent : MonoBehaviour
         currentEmotionName        = felt.emotion.ToString();
         currentEmotionIntensity   = felt.intensity;
 
-        // Update mood
         mood.UpdateFromEmotion(felt, (float)neuroticism);
 
-        // For debugging
         string messageLog = "Agent percieved event: " + evt.eventId + "\n";
         messageLog += "Agent felt: " + currentEmotionName + " with intensity: " + currentEmotionIntensity + "\n";
         messageLog += "Agent shifted mood to: " + mood.ToString() + "\n";
-        //logs.Add(messageLog);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -238,14 +207,13 @@ public class Agent : MonoBehaviour
     {
         if (_bdi == null) return;
 
-        // Provide game-level beliefs from GameManager
         if (GameManager.Instance != null)
         {
             int raw = GameManager.Instance.gameScore;
             _bdi.Beliefs.gameScoreFromMyTeam = team == Teams.Red ? raw : -raw;
         }
 
-        // Field proximity (radius 15 — adjust to your stadium scale)
+        // Field proximity
         _bdi.Beliefs.isNearField = _fieldCenter != null &&
             Vector3.Distance(transform.position, _fieldCenter.position) < 15f;
 
@@ -280,7 +248,6 @@ public class Agent : MonoBehaviour
 
         if (submitToGM)
         {
-            // Submit complete data row to CSV Logger!
             DataLogger.Instance.LogReaction(
                 npcID, npcName, team.ToString(), personalityType,
                 openness, conscientiousness, extraversion, agreeableness, neuroticism, stability,
@@ -471,7 +438,6 @@ public class Agent : MonoBehaviour
         switch (currentActionType)
         {
             case AgentActionType.WatchCalmly:
-                // Stand still
                 break;
 
             case AgentActionType.Celebrate:
@@ -487,10 +453,8 @@ public class Agent : MonoBehaviour
                 break;
 
             case AgentActionType.Insult:
-                // Keep tracking the enemy
                 if (_bdi?.Beliefs.nearestEnemy != null && !_actionAnimTriggered)
                     navAgent.SetDestination(_bdi.Beliefs.nearestEnemy.transform.position);
-                // Should walk to enemy
                 if (_actionTimer > _actionDuration && !_actionAnimTriggered)
                 {
                     navAgent.speed = _baseNavSpeed;
@@ -551,7 +515,6 @@ public class Agent : MonoBehaviour
                 break;
 
             case AgentActionType.PitchInvasion:
-                // Keep heading to field
                 if (_fieldCenter != null && navAgent.isOnNavMesh &&
                     !navAgent.pathPending && navAgent.remainingDistance <= reachDistance)
                     navAgent.SetDestination(_fieldCenter.position);
@@ -572,17 +535,6 @@ public class Agent : MonoBehaviour
 
         if (!_actionAnimTriggered)
             navAgent.SetDestination(foe.transform.position);
-
-        /*
-        // When close enough, trigger the fight event for nearby agents
-        float dist = Vector3.Distance(transform.position, foe.transform.position);
-        if (dist < 1.5f && _fightBroadcastCooldown <= 0f)
-        {
-            // Removed: agents should not auto-broadcast outside managed iterations
-            // BroadcastLocal(SimEvent.Fight(this, foe));
-            _fightBroadcastCooldown = FIGHT_BCAST_INTERVAL;
-        }
-        */
 
         // Stop fighting eventually when timer is up (or when mood naturally forces BDI state switch)
         if (_actionTimer > _actionDuration)
@@ -619,7 +571,6 @@ public class Agent : MonoBehaviour
             }
         }
 
-        // Fallback
         Vector3 threatPos = _bdi?.Beliefs.nearestEnemy?.transform.position ?? transform.position;
         Vector3 fleeDir   = (transform.position - threatPos).normalized;
         if (fleeDir.sqrMagnitude < 0.01f) fleeDir = Random.onUnitSphere;
@@ -719,13 +670,10 @@ public class Agent : MonoBehaviour
             { "Feet",  blackColour },
         };
 
-        // Walk every SkinnedMeshRenderer in the hierarchy.
-        // GetComponentsInChildren is recursive, so it finds all depths.
         foreach (SkinnedMeshRenderer smr in
                  GetComponentsInChildren<SkinnedMeshRenderer>(includeInactive: true))
         {
             var props = new MaterialPropertyBlock();
-            // Read whatever the renderer already has so we only override _BaseColor.
             smr.GetPropertyBlock(props);
 
             if (smr.gameObject.name == "Underwear") smr.gameObject.SetActive(false);
@@ -734,7 +682,6 @@ public class Agent : MonoBehaviour
             {
                 props.SetColor("_BaseColor", c);
             }
-            // If the part is NOT in the map we leave props as-is (no tint applied).
 
             smr.SetPropertyBlock(props);
         }

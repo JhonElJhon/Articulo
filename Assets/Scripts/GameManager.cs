@@ -68,11 +68,9 @@ public class GameManager : MonoBehaviour
     private Queue<PendingLocalEvent> _localEventQueue = new Queue<PendingLocalEvent>();
     private int _maxEventsPerFrame = 15; // Throttle to prevent frame spikes
 
-    // Explicit loop tracking
     private bool _isProcessingSimulation = false;
     private float _waitTimer = 0f;
 
-    // Spatial Grid for O(1) proximity lookups (replacing Physics.OverlapSphere)
     private float _gridCellSize = 5f;
     private Dictionary<Vector2Int, List<Agent>> _spatialGrid = new Dictionary<Vector2Int, List<Agent>>();
 
@@ -108,10 +106,7 @@ public class GameManager : MonoBehaviour
             _spawned = true;
         }
         if(_spawned)crono += Time.deltaTime;
-        // Cosmetic countdown
         if (_spawned && !_gameOver && timeRemaining > 0f) timeRemaining -= Time.deltaTime;
-
-        //if (eventCooldown > 0f) eventCooldown -= Time.deltaTime;
 
         if (!_spawned || _gameOver) return;
 
@@ -172,13 +167,11 @@ public class GameManager : MonoBehaviour
     /// <summary>Fires a global event to all subscribed agents simultaneously.</summary>
     public void BroadcastGlobalEvent(SimEvent evt)
     {
-        // 1. All agents LISTEN (update emotion/mood)
         OnGlobalEvent?.Invoke(evt);
         
-        // 2. Start Phase 2: React
         _localEventQueue.Clear();
         iterationCount = 0;
-        ExecuteAction?.Invoke(); // Command agents to submit their reaction
+        ExecuteAction?.Invoke();
         
         _waitTimer = eventCooldown; // Delay before processing local events
         _isProcessingSimulation = true;
@@ -217,13 +210,11 @@ public class GameManager : MonoBehaviour
 
         if(iterationCount < maxIterations)
         {
-            // Command agents to submit reactions based on the current local events
             ExecuteAction?.Invoke();
             _waitTimer = eventCooldown;
         }
         else
         {
-            // Done with all iterations
             _isProcessingSimulation = false;
         }
     }
@@ -239,8 +230,6 @@ public class GameManager : MonoBehaviour
 
     private void RebuildSpatialGrid()
     {
-        // Rebuilding the grid every frame is extremely fast (O(N) dictionary groupings)
-        // and completely eliminates Physics.OverlapSphere CPU bounds overhead.
         _spatialGrid.Clear();
         foreach (Agent agent in allAgents)
         {
@@ -299,7 +288,6 @@ public class GameManager : MonoBehaviour
         }
         pois = ShuffleArray(pois);
 
-        // Determine Agent layer (optional — for BDI OverlapSphere performance)
         int agentLayer = LayerMask.NameToLayer("Agent");
 
         int spawnCount = Mathf.Min(maxNPC, pois.Length);
@@ -307,7 +295,6 @@ public class GameManager : MonoBehaviour
         {
             GameObject npcGO = Instantiate(npcPrefab);
 
-            // Optionally place on Agent layer if it exists
             if (agentLayer >= 0) npcGO.layer = agentLayer;
 
             NavMeshAgent nav = npcGO.GetComponent<NavMeshAgent>();
@@ -319,7 +306,7 @@ public class GameManager : MonoBehaviour
             {
                 agent.SetTeam(Agent.Teams.Random);
                 agent.SetPersonality(assignments[i]);
-                allAgents.Add(agent); // Add to master list for Spatial Grid
+                allAgents.Add(agent);
             }
         }
 

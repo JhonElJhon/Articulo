@@ -5,10 +5,7 @@ using UnityEngine;
 /// <summary>Global events reach all agents; Local events use a proximity radius.</summary>
 public enum EventScope { Global, Local }
 
-/// <summary>
-/// Who caused the event — key to the OCC appraisal branch.
-/// Same event feels different if caused by an enemy vs. the game itself.
-/// </summary>
+
 public enum EventAgency { Game, Self, Ally, Enemy }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -82,7 +79,7 @@ public struct SimEvent
         agency            = EventAgency.Game,
         instigatingTeam   = attemptingTeam,
         desirability      =  0.30f,
-        suddenness        =  0.85f,  // very surprising
+        suddenness        =  0.85f,
         socialWeight      =  0.80f,
         physicalThreat    =  0.00f,
         praiseworthiness  =  0.00f
@@ -98,13 +95,9 @@ public struct SimEvent
         suddenness        =  0.55f,
         socialWeight      =  0.90f,
         physicalThreat    =  0.00f,
-        praiseworthiness  = -0.60f   // the call was unfair
+        praiseworthiness  = -0.60f
     };
 
-    /// <summary>
-    /// Mid-game score check. Desirability scales with score differential.
-    /// scoreDifferential > 0 means instigatingTeam is ahead.
-    /// </summary>
     public static SimEvent GameSummary(Agent.Teams favoredTeam, float scoreDifferential) => new SimEvent
     {
         eventId           = "gameSummary",
@@ -170,7 +163,7 @@ public struct SimEvent
         instigator        = source,
         desirability      =  0.40f,
         suddenness        =  0.10f,
-        socialWeight      =  0.90f,  // very social, rallying
+        socialWeight      =  0.90f,
         physicalThreat    =  0.00f,
         praiseworthiness  =  0.20f
     };
@@ -184,7 +177,7 @@ public struct SimEvent
         instigator = source,
         desirability = -0.40f,
         suddenness = 0.10f,
-        socialWeight = 0.90f,  // very social, rallying
+        socialWeight = 0.90f,
         physicalThreat = 0.00f,
         praiseworthiness = -0.20f
     };
@@ -215,7 +208,7 @@ public struct SimEvent
         desirability      = -0.80f,
         suddenness        =  0.70f,
         socialWeight      =  0.70f,
-        physicalThreat    =  0.85f,  // very dangerous for nearby agents
+        physicalThreat    =  0.85f,
         praiseworthiness  = -0.90f
     };
 
@@ -263,10 +256,7 @@ public struct SimEvent
         praiseworthiness = 0.80f
     };
 
-    /// <summary>
-    /// A fan invades the pitch. Highly visible — broadcast at wide radius.
-    /// Positive for same team fans (thrilling), threatening for opposing fans.
-    /// </summary>
+
     public static SimEvent PitchInvasion(Agent source) => new SimEvent
     {
         eventId           = "pitchInvasion",
@@ -277,8 +267,8 @@ public struct SimEvent
         desirability      =  0.75f,
         suddenness        =  0.90f,
         socialWeight      =  1.00f,
-        physicalThreat    =  0.40f,   // chaos increases threat for all
-        praiseworthiness  = -0.30f    // exciting but rule-breaking
+        physicalThreat    =  0.40f,
+        praiseworthiness  = -0.30f
     };
 
     public static SimEvent ThrowObject(Agent source) => new SimEvent

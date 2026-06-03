@@ -68,23 +68,12 @@ public class NarratorManager : MonoBehaviour
         audioSource.playOnAwake  = false;
     }
  
-    /// <summary>
-    /// Start() is used for the initial subscription because it is guaranteed to run
-    /// AFTER all Awake() calls in the scene — including GameManager.Awake() which sets
-    /// GameManager.Instance. Subscribing in OnEnable() is not safe here because OnEnable
-    /// fires during scene initialisation before other objects' Awake() calls complete,
-    /// causing GameManager.Instance to be null and the subscription to silently fail.
-    /// </summary>
+
     private void Start()
     {
         Subscribe();
     }
- 
-    /// <summary>
-    /// Re-subscribes if this object is toggled off and back on at runtime.
-    /// The _subscribed guard prevents double-subscription.
-    /// Does nothing during scene initialisation (Start hasn't run yet).
-    /// </summary>
+
     private void OnEnable()
     {
         if (_subscribed) Subscribe();
@@ -119,7 +108,6 @@ public class NarratorManager : MonoBehaviour
  
     private void Update()
     {
-        // Flush the queued clip once the current one finishes and the gap has elapsed
         if (_waitingToPlay && _queued != null && Time.time >= _playbackEndTime + queueDelay)
         {
             PlayNow(_queued);

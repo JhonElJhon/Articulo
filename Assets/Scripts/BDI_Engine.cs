@@ -7,10 +7,6 @@ using UnityEngine;
 /// <summary>
 /// Updated every BDI tick via Physics.OverlapSphere perception.
 /// Represents what the agent currently "knows" about its environment.
-///
-/// Setup note: For better performance, assign agents to a dedicated Unity layer
-/// named "Agent" and enable it in Physics settings. The perception function will
-/// automatically use layer filtering if that layer exists.
 /// </summary>
 [System.Serializable]
 public class BeliefSet
@@ -25,7 +21,7 @@ public class BeliefSet
     public Agent nearestDistressedAlly = null;  // ally with mood.P < -0.40
 
     public bool  isFightNearby      = false;
-    public bool  isNearField        = false;    // near pitch boundary
+    public bool  isNearField        = false;
 
     public int   gameScoreFromMyTeam = 0;       // positive = my team winning
 
@@ -58,15 +54,13 @@ public class BDIEngine
     public BeliefSet Beliefs { get; } = new BeliefSet();
     public DesireSet Desires { get; } = new DesireSet();
 
-    // Cached layer mask for performance (set to -1 if "Agent" layer doesn't exist)
-    private static int _agentLayerMask = -2; // -2 = uninitialised
+    private static int _agentLayerMask = -2;
 
     public BDIEngine(Agent owner)
     {
         _owner = owner;
     }
 
-    /// <summary>Call once after SetPersonality to initialise desire weights.</summary>
     public void Initialize(OCEAN_Model personality)
     {
         Desires.InitializeFromPersonality(personality);
@@ -85,7 +79,6 @@ public class BDIEngine
     {
         List<Agent> nearby = GameManager.Instance.GetAgentsInRadius(_owner.transform.position, perceptionRadius);
 
-        // Reset
         Beliefs.nearbyAllyCount       = 0;
         Beliefs.nearbyEnemyCount      = 0;
         Beliefs.nearestEnemy          = null;
@@ -137,12 +130,10 @@ public class BDIEngine
             if (other.CurrentAction == AgentActionType.Fight) fightCount++;
         }
 
-        // Safety: proportion of nearby agents NOT fighting
         int total = Mathf.Max(1, Beliefs.nearbyAllyCount + Beliefs.nearbyEnemyCount);
         Beliefs.safetyLevel  = Mathf.Clamp01(1f - (float)fightCount / total);
         Beliefs.isFightNearby = fightCount > 0;
 
-        // Average crowd sentiment
         if (Beliefs.nearbyAllyCount > 0)
         {
             Beliefs.crowdPleasure /= Beliefs.nearbyAllyCount;
@@ -166,7 +157,6 @@ public class BDIEngine
         float C  = (float)_owner.conscientiousness;
         float Ag = (float)_owner.agreeableness;
 
-        // Conscientious agents require stronger emotional signal to act
         float threshold = 0.40f - C * 0.10f;
 
         AgentActionType bestAction = AgentActionType.WatchCalmly;
@@ -185,7 +175,6 @@ public class BDIEngine
 
             float score = emotionFit * 0.45f + desireFit * 0.55f;
 
-            // Arousal amplifies action likelihood
             score *= 1f + Mathf.Abs(mood.A) * 0.35f;
 
             if (score > bestScore)
@@ -204,29 +193,23 @@ public class BDIEngine
 
     private bool IsPreconditionMet(ActionDefinition action, EmotionInstance emotion, PADState mood, float Ag)
     {
-        // PAD conditions on the felt emotion
         if (emotion.pad.P < action.minP) return false;
         if (emotion.pad.A < action.minA) return false;
         if (emotion.pad.D < action.minD) return false;
 
-        // World-state conditions
         if (action.requiresNearbyEnemy && Beliefs.nearestEnemy          == null) return false;
         if (action.requiresNearbyAlly  && Beliefs.nearestAlly           == null) return false;
         if (action.requiresLowSafety   && Beliefs.safetyLevel           >= 0.50f) return false;
         if (action.requiresNearField   && !Beliefs.isNearField)                  return false;
 
-        // Personality gates
         if (action.minAgreeableness > 0f && Ag < action.minAgreeableness) return false;
         if (action.type == AgentActionType.PitchInvasion &&
             (float)_owner.conscientiousness > action.maxConscientiousness) return false;
 
-        // Special case: Boo only when feeling negative
         if (action.type == AgentActionType.Boo && emotion.pad.P >= 0f) return false;
 
-        // ThrowObject only when very upset (P < -0.40)
         if (action.type == AgentActionType.ThrowObject && emotion.pad.P > -0.40f) return false;
 
-        // Fight requires some dominance in the felt emotion
         if (action.type == AgentActionType.Fight && emotion.pad.D < 0.15f) return false;
 
         return true;

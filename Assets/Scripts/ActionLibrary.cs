@@ -43,15 +43,15 @@ public class ActionDefinition
     public DesireType[] satisfiesDesires;
 
     // ── PAD preconditions (checked against the agent's current emotion PAD) ──
-    public float minP = -1f;   // emotion.pad.P >= minP
-    public float minA = -1f;   // emotion.pad.A >= minA
-    public float minD = -1f;   // emotion.pad.D >= minD
+    public float minP = -1f;
+    public float minA = -1f;
+    public float minD = -1f;
 
     // ── Belief-based preconditions ────────────────────────────────────────────
-    public bool requiresNearbyEnemy = false;  // nearestEnemy != null
-    public bool requiresNearbyAlly  = false;  // nearestAlly  != null
-    public bool requiresLowSafety   = false;  // safetyLevel < 0.5
-    public bool requiresNearField   = false;  // isNearField == true
+    public bool requiresNearbyEnemy = false;
+    public bool requiresNearbyAlly  = false;
+    public bool requiresLowSafety   = false;
+    public bool requiresNearField   = false;
 
     // ── Personality gates ─────────────────────────────────────────────────────
     /// <summary>ComfortAlly only activates on agents with enough Agreeableness.</summary>
@@ -68,7 +68,6 @@ public static class ActionLibrary
 {
     private static readonly List<ActionDefinition> _all = new List<ActionDefinition>
     {
-        // WatchCalmly — always available; the default fallback
         new ActionDefinition
         {
             type             = AgentActionType.WatchCalmly,
@@ -76,7 +75,6 @@ public static class ActionLibrary
             satisfiesDesires = new[] { DesireType.Safety },
         },
 
-        // Celebrate — positive, high energy, social
         new ActionDefinition
         {
             type             = AgentActionType.Celebrate,
@@ -85,7 +83,6 @@ public static class ActionLibrary
             minP             = 0.15f,
         },
 
-        // Chant — positive, social, moderate energy
         new ActionDefinition
         {
             type             = AgentActionType.Chant,
@@ -95,7 +92,6 @@ public static class ActionLibrary
             requiresNearbyAlly = true,
         },
 
-        // Boo — negative, low-moderate arousal (guarded by special P<0 check in BDI)
         new ActionDefinition
         {
             type             = AgentActionType.Boo,
@@ -103,7 +99,6 @@ public static class ActionLibrary
             satisfiesDesires = new[] { DesireType.Vent, DesireType.Win },
         },
 
-        // Insult — negative, high arousal, dominant; requires an enemy nearby
         new ActionDefinition
         {
             type             = AgentActionType.Insult,
@@ -113,7 +108,6 @@ public static class ActionLibrary
             minD             = -0.10f,
         },
 
-        // Fight — most extreme negative; chases enemy, broadcasts fight event
         new ActionDefinition
         {
             type             = AgentActionType.Fight,
@@ -123,7 +117,6 @@ public static class ActionLibrary
             minD             = 0.20f,
         },
 
-        // Run — safety behaviour; available when environment is dangerous
         new ActionDefinition
         {
             type             = AgentActionType.Run,
@@ -132,7 +125,6 @@ public static class ActionLibrary
             requiresLowSafety = true,
         },
 
-        // ComfortAlly — prosocial; requires nearby sad ally and agreeable personality
         new ActionDefinition
         {
             type             = AgentActionType.ComfortAlly,
@@ -142,16 +134,14 @@ public static class ActionLibrary
             minAgreeableness  = 0.40f,
         },
 
-        // CalmSituation — conscientious agents de-escalate fights
         new ActionDefinition
         {
             type             = AgentActionType.CalmSituation,
             idealPAD         = new PADValues( 0.10f, -0.30f,  0.30f),
             satisfiesDesires = new[] { DesireType.Order },
-            requiresNearbyEnemy = true,  // "nearby fight" approximated by enemy presence
+            requiresNearbyEnemy = true,
         },
 
-        // FormGroup — social bonding with allies
         new ActionDefinition
         {
             type             = AgentActionType.FormGroup,
@@ -161,7 +151,6 @@ public static class ActionLibrary
             minP             = 0.00f,
         },
 
-        // PitchInvasion — extreme joy + impulsiveness + proximity to field
         new ActionDefinition
         {
             type             = AgentActionType.PitchInvasion,
@@ -172,13 +161,11 @@ public static class ActionLibrary
             maxConscientiousness = 0.35f,
         },
 
-        // ThrowObject — very negative; dangerous signal to crowd
         new ActionDefinition
         {
             type             = AgentActionType.ThrowObject,
             idealPAD         = new PADValues(-0.70f,  0.80f,  0.50f),
             satisfiesDesires = new[] { DesireType.Vent, DesireType.Dominate },
-            // Special: only available when P < -0.40 (checked in BDI)
         },
     };
 

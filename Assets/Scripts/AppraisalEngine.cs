@@ -132,14 +132,13 @@ public static class AppraisalEngine
         if (threat > 0.50f)
             return perceivedD < 0f ? OCCEmotion.Fear : OCCEmotion.Anger;
 
-        // An agent caused this.
         if (evt.agency == EventAgency.Enemy || evt.agency == EventAgency.Ally)
         {
             OCCEmotion emotion;
 
-            if      (perceivedD >  0.20f) emotion = OCCEmotion.Anger;    // fight
-            else if (perceivedD < -0.20f) emotion = OCCEmotion.Fear;     // flight
-            else                          emotion = OCCEmotion.Distress;  // freeze
+            if      (perceivedD >  0.20f) emotion = OCCEmotion.Anger;
+            else if (perceivedD < -0.20f) emotion = OCCEmotion.Fear;
+            else                          emotion = OCCEmotion.Distress;
 
             // Agreeable agents reproach rather than rage — less activation, more judgment.
             if (Ag > 0.65f && Mathf.Abs(desirability) < 0.65f)

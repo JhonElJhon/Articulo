@@ -30,7 +30,6 @@ public class DataLogger : MonoBehaviour
         {
             writer = new StreamWriter(filePath, false, Encoding.UTF8); // Overwrite old logs on restart
             
-            // Write CSV Header
             writer.WriteLine("AgentID;AgentName;Team;Personality;Openness;Conscientiousness;Extraversion;Agreeableness;Neuroticism;Stability;" +
                              "PrevMood_P;PrevMood_A;PrevMood_D;" +
                              "EventID;Emotion;EmotionIntensity;" +
@@ -58,7 +57,6 @@ public class DataLogger : MonoBehaviour
     {
         if (writer == null) return;
         
-        // Format to CSV string safely
         string line = string.Format(
             "{0};{1};{2};{3};{4:F3};{5:F3};{6:F3};{7:F3};{8:F3};{9:F3};{10:F3};{11:F3};{12:F3};{13};{14};{15:F3};{16:F3};{17:F3};{18:F3};{19};{20:F3}",
             //"{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19}",
